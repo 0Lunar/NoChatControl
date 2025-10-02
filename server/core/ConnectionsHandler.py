@@ -1,0 +1,28 @@
+from core import SocketHandler
+
+
+class ConnHandler(object):
+    def __init__(self) -> None:
+        self.conn_dict = {}
+    
+    
+    def add(self, conn: SocketHandler, addr: tuple[str, int]) -> None:
+        host, port = addr[0], addr[1]
+        
+        self.conn_dict[host] = [conn, port]
+        
+    
+    def remove(self, host: str) -> None:
+        self.conn_dict.pop(host)
+        
+        
+    def get(self, host: str) -> (SocketHandler | None):
+        return self.conn_dict.get(host, None)
+    
+    
+    def get_all(self) -> dict[str, tuple[str, int]]:
+        return self.conn_dict.copy()
+    
+    
+    def clear(self) -> None:
+        self.conn_dict.clear()

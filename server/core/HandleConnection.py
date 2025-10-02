@@ -181,3 +181,11 @@ class SocketHandler(socket.socket):
         payload_len = int.from_bytes(payload_len, 'big')
 
         return self.recv(payload_len)
+
+
+    def unsafe_send(self, msg: bytes) -> int:
+        return super().send(msg)
+    
+    
+    def unsafe_recv(self, bufsize: int) -> bytes:
+        return super().recv(bufsize)
