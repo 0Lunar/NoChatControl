@@ -22,8 +22,9 @@ CREATE TABLE credentials(
 
 CREATE TABLE tokens(
     TokenID INT AUTO_INCREMENT PRIMARY KEY,
-    token VARCHAR(32),
+    token VARCHAR(32) NOT NULL UNIQUE,
     user INT,
+    expire DATETIME,
 
     FOREIGN KEY (user) REFERENCES users(UserID)
 );

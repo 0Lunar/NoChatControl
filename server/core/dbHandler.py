@@ -1,6 +1,8 @@
 import mysql.connector as mysql
 from core import CryptoHandler
 import os
+from uuid import uuid4
+from datetime import datetime
 
 
 class db(object):
@@ -26,13 +28,27 @@ class db(object):
         if res is None:
             return False
         
-        return len(res) == 1 and res[0] == True
+        return len(res) == 1 and res[0]
+    
+    
+    def userID(self, username: str) -> (int | None):
+        cursor = self.db.cursor()
+        
+        cursor.execute("SELECT users.UserID FROM users WHERE users.username = %s LIMIT 1", (username,))
+        res = cursor.fetchone()
+        
+        cursor.close()
+        
+        if res is None:
+            return None
+        
+        return res[0]
 
         
     def checkPw(self, username: str, password: str, silent: bool = False) -> bool:
         cursor = self.db.cursor()
         
-        cursor.execute("SELECT password FROM credentials INNER JOIN (users) ON (users.UserID) = (credentials.user) WHERE username='%s' LIMIT 1", (username,))
+        cursor.execute("SELECT credentials.password FROM credentials INNER JOIN (users) ON (users.UserID) = (credentials.user) WHERE users.username='%s' LIMIT 1", (username,))
         hs_passwd = cursor.fetchone()
         
         cursor.close()
@@ -48,7 +64,7 @@ class db(object):
     def checkBan(self, username, silent: bool = False) -> bool:
         cursor = self.db.cursor()
         
-        cursor.execute("SELECT banned FROM users WHERE username=%s", (username, ))
+        cursor.execute("SELECT users.banned FROM users WHERE users.username=%s", (username, ))
         res = cursor.fetchone()
         
         cursor.close()
@@ -59,3 +75,47 @@ class db(object):
             raise RuntimeError("Database response is NULL")
         
         return res[0]
+    
+
+    def existToken(self, token: str) -> bool:
+        cursor = self.db.cursor()
+        cursor.execute("SELECT 1 FROM tokens WHERE tokens.token = %s LIMIT 1", (token,))
+        res = cursor.fetchone()
+        
+        cursor.close()
+        
+        if res is None:
+            return False
+    
+        return res[0]
+    
+    
+    def isExpiredToken(self, token: str) -> (bool | None):
+        cursor = self.db.cursor()
+        
+        cursor.execute("SELECT tokens.expire FROM tokens WHERE tokens.token = %s LIMIT 1", (token, ))
+        expire = cursor.fetchone()
+        
+        cursor.close()
+        
+        if expire is None:
+            return None
+        
+        expire = expire[0]  # type: datetime
+        
+        return expire.timestamp() < datetime.now().timestamp()
+    
+    
+    def makeToken(self, user: int) -> str:
+        token = str(uuid4())
+        expire = datetime.now().timestamp() + 604800.0  # 1 week
+        expire = datetime.fromtimestamp(expire).strftime("%Y-%m-%d %H:%M:%S")
+        
+        cursor = self.db.cursor()
+        cursor.execute("INSERT INTO tokens(token, user, expire) VALUES (%s, %s, %s)", (token, user, expire, ))
+        
+        self.db.commit()
+        
+        cursor.close()
+        
+        return token
